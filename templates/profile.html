@@ -1,0 +1,93 @@
+{% extends "base.html" %}
+{% block title %}Profile – LibraVerse{% endblock %}
+{% block content %}
+
+<div class="page-header">
+    <div class="container">
+        <h1>👤 My Profile</h1>
+        <p>Manage your account information</p>
+    </div>
+</div>
+
+<div class="container profile-page">
+    <div class="profile-grid">
+        <!-- Left Card -->
+        <div class="profile-card">
+            <div class="profile-avatar-large">{{ user.name[0]|upper }}</div>
+            <h2>{{ user.name }}</h2>
+            <span class="role-badge {{ user.role }}">{{ user.role|capitalize }}</span>
+            <p class="profile-email"><i class="fas fa-envelope"></i> {{ user.email }}</p>
+            {% if user.phone %}
+            <p class="profile-email"><i class="fas fa-phone"></i> {{ user.phone }}</p>
+            {% endif %}
+            <p class="profile-email"><i class="fas fa-calendar"></i> Joined {{ user.joined_date }}</p>
+
+            <div class="profile-stats">
+                <div class="pstat">
+                    <span class="pstat-num">{{ stats.total_borrowed }}</span>
+                    <span class="pstat-label">Total Borrowed</span>
+                </div>
+                <div class="pstat">
+                    <span class="pstat-num">{{ stats.currently_borrowed }}</span>
+                    <span class="pstat-label">Currently Held</span>
+                </div>
+                <div class="pstat">
+                    <span class="pstat-num">{{ stats.wishlist_count }}</span>
+                    <span class="pstat-label">Wishlist</span>
+                </div>
+            </div>
+
+            <div class="profile-links">
+                <a href="{{ url_for('my_books') }}" class="btn btn-outline btn-full"><i class="fas fa-book"></i> View My Books</a>
+                <a href="{{ url_for('wishlist') }}" class="btn btn-outline btn-full"><i class="fas fa-heart"></i> My Wishlist</a>
+                <a href="{{ url_for('logout') }}" class="btn btn-danger btn-full"><i class="fas fa-sign-out-alt"></i> Logout</a>
+            </div>
+        </div>
+
+        <!-- Right Side -->
+        <div class="profile-details">
+            <div class="profile-section">
+                <h3><i class="fas fa-user-edit"></i> Account Information</h3>
+                <div class="info-grid">
+                    <div class="info-item"><label>Full Name</label><span>{{ user.name }}</span></div>
+                    <div class="info-item"><label>Email</label><span>{{ user.email }}</span></div>
+                    <div class="info-item"><label>Phone</label><span>{{ user.phone or 'Not provided' }}</span></div>
+                    <div class="info-item"><label>Member Since</label><span>{{ user.joined_date }}</span></div>
+                    <div class="info-item"><label>Role</label><span>{{ user.role|capitalize }}</span></div>
+                    <div class="info-item"><label>Status</label><span class="text-green">Active</span></div>
+                </div>
+            </div>
+
+            <div class="profile-section">
+                <h3><i class="fas fa-shield-alt"></i> Borrowing Policy</h3>
+                <div class="policy-list">
+                    <div class="policy-item"><i class="fas fa-check-circle text-green"></i> Borrow up to 5 books simultaneously</div>
+                    <div class="policy-item"><i class="fas fa-check-circle text-green"></i> 14-day lending period per book</div>
+                    <div class="policy-item"><i class="fas fa-exclamation-circle text-orange"></i> ₹5 per day late fine after due date</div>
+                    <div class="policy-item"><i class="fas fa-info-circle text-blue"></i> Renew books before due date online</div>
+                </div>
+            </div>
+
+            <div class="profile-section">
+                <h3><i class="fas fa-chart-bar"></i> Reading Activity</h3>
+                <div class="activity-bar-wrap">
+                    <div class="activity-item">
+                        <span>Borrowing Capacity Used</span>
+                        <div class="activity-bar">
+                            <div class="activity-fill" style="width: {{ (stats.currently_borrowed / 5 * 100)|int }}%"></div>
+                        </div>
+                        <span>{{ stats.currently_borrowed }}/5</span>
+                    </div>
+                    <div class="activity-item">
+                        <span>Books Completed</span>
+                        <div class="activity-bar">
+                            <div class="activity-fill" style="width: {{ ([stats.total_borrowed - stats.currently_borrowed, 0]|max / [stats.total_borrowed, 1]|max * 100)|int }}%"></div>
+                        </div>
+                        <span>{{ stats.total_borrowed - stats.currently_borrowed }}/{{ stats.total_borrowed }}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

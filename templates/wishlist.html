@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+{% block title %}Wishlist – LibraVerse{% endblock %}
+{% block content %}
+
+<div class="page-header">
+    <div class="container">
+        <h1>❤️ My Wishlist</h1>
+        <p>Books you've saved for later</p>
+    </div>
+</div>
+
+<div class="container">
+    {% if items %}
+    <div class="books-grid">
+        {% for book in items %}
+        <div class="book-card" onclick="window.location='/book/{{ book.id }}'">
+            <div class="book-cover">
+                <div class="book-cover-placeholder" style="background: linear-gradient(135deg, hsl({{ loop.index * 40 }}, 70%, 40%), hsl({{ loop.index * 40 + 40 }}, 60%, 30%))">
+                    <i class="fas fa-book-open"></i>
+                    <span>{{ book.title[:15] }}</span>
+                </div>
+                <div class="book-overlay">
+                    <a href="/book/{{ book.id }}" class="btn btn-sm btn-white" onclick="event.stopPropagation()">View Details</a>
+                    <button class="btn btn-sm btn-icon" style="background:#e63946" onclick="removeWishlist({{ book.id }}, event, this.closest('.book-card'))">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </div>
+                {% if book.available_copies > 0 %}
+                <span class="book-badge badge-available">Available</span>
+                {% else %}
+                <span class="book-badge badge-unavailable">Unavailable</span>
+                {% endif %}
+            </div>
+            <div class="book-info">
+                <h3 class="book-title">{{ book.title }}</h3>
+                <p class="book-author">{{ book.author }}</p>
+                <div class="book-meta">
+                    <div class="book-rating">
+                        {% for i in range(5) %}<i class="fas fa-star {% if i < book.rating|int %}star-filled{% endif %}"></i>{% endfor %}
+                        <span>({{ book.reviews_count }})</span>
+                    </div>
+                    <span class="book-category">{{ book.category }}</span>
+                </div>
+                <div class="book-footer">
+                    <span class="book-price">₹{{ book.price }}</span>
+                    <button class="btn btn-sm btn-borrow" onclick="borrowBook({{ book.id }}, event)">
+                        <i class="fas fa-plus"></i> Borrow
+                    </button>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="empty-state">
+        <i class="fas fa-heart-broken"></i>
+        <h3>Your wishlist is empty</h3>
+        <p>Save books you want to read later by clicking the ❤️ icon.</p>
+        <a href="{{ url_for('books') }}" class="btn btn-primary">Browse Books</a>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function removeWishlist(id, event, card) {
+    event.stopPropagation();
+    fetch(`/api/wishlist/toggle/${id}`, {method: 'POST'})
+        .then(r => r.json()).then(d => {
+            if (!d.added) { card.style.opacity = '0'; card.style.transform = 'scale(0.8)'; setTimeout(() => card.remove(), 300); showToast('Removed from wishlist'); }
+        });
+}
+</script>
+{% endblock %}

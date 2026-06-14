@@ -1,0 +1,198 @@
+{% extends "base.html" %}
+{% block title %}{{ book.title }} – LibraVerse{% endblock %}
+{% block content %}
+
+<div class="container book-detail-page">
+    <div class="breadcrumb">
+        <a href="{{ url_for('index') }}">Home</a> /
+        <a href="{{ url_for('books') }}">Books</a> /
+        <span>{{ book.title }}</span>
+    </div>
+
+    <div class="book-detail-grid">
+        <!-- Cover -->
+        <div class="book-detail-cover">
+            <div class="detail-cover-img" style="background: linear-gradient(135deg, hsl({{ book.id * 37 }}, 70%, 35%), hsl({{ book.id * 37 + 50 }}, 60%, 25%))">
+                <i class="fas fa-book-open"></i>
+                <span>{{ book.title }}</span>
+            </div>
+            <div class="detail-actions">
+                <button class="btn btn-primary btn-full borrow-main-btn" id="borrowBtn" onclick="borrowBook({{ book.id }})">
+                    <i class="fas fa-book-reader"></i> Borrow This Book
+                </button>
+                <button class="btn btn-outline btn-full wishlist-main-btn {% if in_wishlist %}active{% endif %}" onclick="toggleWishlist({{ book.id }}, this)">
+                    <i class="fas fa-heart"></i> {{ 'Remove from Wishlist' if in_wishlist else 'Add to Wishlist' }}
+                </button>
+            </div>
+            <div class="detail-quick-info">
+                <div class="qi-item">
+                    <span class="qi-label">Status</span>
+                    <span class="qi-value {% if book.available_copies > 0 %}text-green{% else %}text-red{% endif %}">
+                        {{ 'Available (' + book.available_copies|string + ' copies)' if book.available_copies > 0 else 'Not Available' }}
+                    </span>
+                </div>
+                <div class="qi-item">
+                    <span class="qi-label">Loan Period</span>
+                    <span class="qi-value">14 days</span>
+                </div>
+                <div class="qi-item">
+                    <span class="qi-label">Late Fine</span>
+                    <span class="qi-value">₹5 / day</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Info -->
+        <div class="book-detail-info">
+            <span class="book-cat-badge">{{ book.category }}</span>
+            <h1 class="detail-title">{{ book.title }}</h1>
+            <p class="detail-author">by <strong>{{ book.author }}</strong></p>
+
+            <div class="detail-rating">
+                {% for i in range(5) %}
+                <i class="fas fa-star {% if i < book.rating|int %}star-filled{% else %}star-empty{% endif %}"></i>
+                {% endfor %}
+                <span class="rating-num">{{ book.rating }}</span>
+                <span class="rating-count">{{ book.reviews_count }} reviews</span>
+            </div>
+
+            <div class="detail-meta-grid">
+                <div class="dm-item"><span class="dm-label">Publisher</span><span class="dm-value">{{ book.publisher or 'N/A' }}</span></div>
+                <div class="dm-item"><span class="dm-label">Year</span><span class="dm-value">{{ book.year or 'N/A' }}</span></div>
+                <div class="dm-item"><span class="dm-label">ISBN</span><span class="dm-value">{{ book.isbn or 'N/A' }}</span></div>
+                <div class="dm-item"><span class="dm-label">Total Copies</span><span class="dm-value">{{ book.total_copies }}</span></div>
+                <div class="dm-item"><span class="dm-label">Price</span><span class="dm-value">₹{{ book.price }}</span></div>
+                <div class="dm-item"><span class="dm-label">Available</span><span class="dm-value text-green">{{ book.available_copies }}</span></div>
+            </div>
+
+            <div class="detail-description">
+                <h3>About this Book</h3>
+                <p>{{ book.description or 'No description available.' }}</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Related Books -->
+    {% if related %}
+    <div class="related-section">
+        <h2>You Might Also Like</h2>
+        <div class="books-row">
+            {% for b in related %}
+            <div class="book-row-card" onclick="window.location='/book/{{ b.id }}'">
+                <div class="brc-cover" style="background: linear-gradient(135deg, hsl({{ loop.index * 55 }}, 65%, 45%), hsl({{ loop.index * 55 + 50 }}, 55%, 35%))">
+                    <i class="fas fa-book-open"></i>
+                </div>
+                <div class="brc-info">
+                    <h4>{{ b.title }}</h4>
+                    <p>{{ b.author }}</p>
+                    <div class="mini-stars">{% for i in range(5) %}<i class="fas fa-star {% if i < b.rating|int %}star-filled{% endif %}"></i>{% endfor %}</div>
+                </div>
+                <a href="/book/{{ b.id }}" class="brc-btn"><i class="fas fa-arrow-right"></i></a>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Reviews -->
+    <div class="reviews-section">
+        <div class="reviews-header">
+            <h2>Customer Reviews ({{ book.reviews_count }})</h2>
+            <button class="btn btn-primary" onclick="document.getElementById('reviewModal').style.display='flex'">
+                <i class="fas fa-pen"></i> Write a Review
+            </button>
+        </div>
+
+        {% if reviews %}
+        <div class="reviews-list">
+            {% for rev in reviews %}
+            <div class="review-card">
+                <div class="review-header">
+                    <div class="reviewer-avatar">{{ rev.user_name[0]|upper }}</div>
+                    <div class="reviewer-info">
+                        <strong>{{ rev.user_name }}</strong>
+                        <span>{{ rev.date }}</span>
+                    </div>
+                    <div class="review-stars">
+                        {% for i in range(5) %}<i class="fas fa-star {% if i < rev.rating %}star-filled{% endif %}"></i>{% endfor %}
+                    </div>
+                </div>
+                <p class="review-text">{{ rev.comment }}</p>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="empty-state small">
+            <i class="fas fa-comment-slash"></i>
+            <p>No reviews yet. Be the first to review!</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Review Modal -->
+<div class="modal" id="reviewModal">
+    <div class="modal-box">
+        <h3>Write a Review</h3>
+        <p>Reviewing: <em>{{ book.title }}</em></p>
+        <div class="star-picker">
+            {% for i in range(1, 6) %}
+            <i class="fas fa-star star-pick" data-val="{{ i }}"></i>
+            {% endfor %}
+        </div>
+        <input type="hidden" id="reviewRating" value="0">
+        <textarea id="reviewText" placeholder="Share your thoughts..." rows="4"></textarea>
+        <div class="modal-actions">
+            <button class="btn btn-outline" onclick="document.getElementById('reviewModal').style.display='none'">Cancel</button>
+            <button class="btn btn-primary" onclick="submitReview({{ book.id }})">Submit Review</button>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.querySelectorAll('.star-pick').forEach(star => {
+    star.addEventListener('click', function() {
+        const val = this.dataset.val;
+        document.getElementById('reviewRating').value = val;
+        document.querySelectorAll('.star-pick').forEach((s, i) => {
+            s.style.color = i < val ? '#f59e0b' : '#ccc';
+        });
+    });
+    star.addEventListener('mouseover', function() {
+        const val = this.dataset.val;
+        document.querySelectorAll('.star-pick').forEach((s, i) => {
+            s.style.color = i < val ? '#f59e0b' : '#ccc';
+        });
+    });
+});
+
+async function submitReview(bookId) {
+    const rating = parseInt(document.getElementById('reviewRating').value);
+    const comment = document.getElementById('reviewText').value;
+    if (!rating) { showToast('Please select a rating', 'error'); return; }
+    const res = await fetch(`/api/review/${bookId}`, {
+        method: 'POST', headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({rating, comment})
+    });
+    if ((await res.json()).success) {
+        showToast('Review submitted!', 'success');
+        document.getElementById('reviewModal').style.display = 'none';
+        setTimeout(() => location.reload(), 1000);
+    }
+}
+
+function toggleWishlist(id, btn) {
+    fetch(`/api/wishlist/toggle/${id}`, {method: 'POST'})
+        .then(r => r.json()).then(d => {
+            btn.classList.toggle('active', d.added);
+            btn.innerHTML = d.added
+                ? '<i class="fas fa-heart"></i> Remove from Wishlist'
+                : '<i class="fas fa-heart"></i> Add to Wishlist';
+            showToast(d.added ? 'Added to wishlist!' : 'Removed from wishlist');
+        });
+}
+</script>
+{% endblock %}

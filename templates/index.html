@@ -1,0 +1,184 @@
+{% extends "base.html" %}
+{% block title %}LibraVerse – Home{% endblock %}
+{% block content %}
+
+<!-- Hero Banner -->
+<section class="hero">
+    <div class="hero-bg"></div>
+    <div class="hero-content">
+        <div class="hero-text">
+            <span class="hero-badge">📚 Welcome back, {{ session.user_name }}</span>
+            <h1>Explore the World<br>Through <span class="hero-highlight">Books</span></h1>
+            <p>Discover thousands of books across every genre. Borrow, read, and expand your horizons with LibraVerse.</p>
+            <div class="hero-actions">
+                <a href="{{ url_for('books') }}" class="btn btn-primary btn-lg">Browse Library</a>
+                <a href="{{ url_for('my_books') }}" class="btn btn-outline btn-lg">My Books</a>
+            </div>
+        </div>
+        <div class="hero-visual">
+            <div class="book-stack">
+                <div class="book-card-float b1"><i class="fas fa-book"></i></div>
+                <div class="book-card-float b2"><i class="fas fa-bookmark"></i></div>
+                <div class="book-card-float b3"><i class="fas fa-star"></i></div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Stats Bar -->
+<section class="stats-bar">
+    <div class="stats-container">
+        <div class="stat-item">
+            <span class="stat-num" data-target="{{ stats.total_books }}">0</span>
+            <span class="stat-label">Books Available</span>
+        </div>
+        <div class="stat-divider"></div>
+        <div class="stat-item">
+            <span class="stat-num" data-target="{{ stats.total_members }}">0</span>
+            <span class="stat-label">Active Members</span>
+        </div>
+        <div class="stat-divider"></div>
+        <div class="stat-item">
+            <span class="stat-num" data-target="{{ stats.active_borrows }}">0</span>
+            <span class="stat-label">Books Borrowed</span>
+        </div>
+        <div class="stat-divider"></div>
+        <div class="stat-item">
+            <span class="stat-num" data-target="{{ stats.categories }}">0</span>
+            <span class="stat-label">Categories</span>
+        </div>
+    </div>
+</section>
+
+<!-- Categories -->
+<section class="section">
+    <div class="container">
+        <div class="section-header">
+            <h2 class="section-title">Browse by Category</h2>
+            <a href="{{ url_for('books') }}" class="see-all">View All <i class="fas fa-arrow-right"></i></a>
+        </div>
+        <div class="categories-grid">
+            {% set cat_icons = {'Fiction': 'fa-feather-alt', 'Technology': 'fa-laptop-code', 'Self-Help': 'fa-brain', 'History': 'fa-landmark', 'Business': 'fa-briefcase', 'Dystopian': 'fa-globe', 'Fantasy': 'fa-hat-wizard', 'Thriller': 'fa-mask', 'Psychology': 'fa-head-side-virus'} %}
+            {% set cat_colors = {'Fiction': '#6C63FF', 'Technology': '#00B4D8', 'Self-Help': '#F77F00', 'History': '#2DC653', 'Business': '#E63946', 'Dystopian': '#9B5DE5', 'Fantasy': '#F72585', 'Thriller': '#FB8500', 'Psychology': '#118AB2'} %}
+            {% for cat in categories %}
+            <a href="{{ url_for('books', category=cat.category) }}" class="category-card" style="--cat-color: {{ cat_colors.get(cat.category, '#6C63FF') }}">
+                <div class="cat-icon"><i class="fas {{ cat_icons.get(cat.category, 'fa-book') }}"></i></div>
+                <span>{{ cat.category }}</span>
+            </a>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+
+<!-- Featured Books -->
+<section class="section section-dark">
+    <div class="container">
+        <div class="section-header">
+            <h2 class="section-title">⭐ Top Rated Books</h2>
+            <a href="{{ url_for('books', sort='rating') }}" class="see-all">See All <i class="fas fa-arrow-right"></i></a>
+        </div>
+        <div class="books-grid">
+            {% for book in featured %}
+            <div class="book-card" onclick="window.location='/book/{{ book.id }}'">
+                <div class="book-cover">
+                    <div class="book-cover-placeholder" style="background: linear-gradient(135deg, hsl({{ loop.index * 37 }}, 70%, 40%), hsl({{ loop.index * 37 + 40 }}, 60%, 30%))">
+                        <i class="fas fa-book-open"></i>
+                        <span>{{ book.title[:20] }}</span>
+                    </div>
+                    <div class="book-overlay">
+                        <a href="/book/{{ book.id }}" class="btn btn-sm btn-white">View Details</a>
+                        <button class="btn btn-sm btn-icon wishlist-btn" data-id="{{ book.id }}">
+                            <i class="fas fa-heart"></i>
+                        </button>
+                    </div>
+                    {% if book.available_copies > 0 %}
+                    <span class="book-badge badge-available">Available</span>
+                    {% else %}
+                    <span class="book-badge badge-unavailable">Borrowed</span>
+                    {% endif %}
+                </div>
+                <div class="book-info">
+                    <h3 class="book-title">{{ book.title }}</h3>
+                    <p class="book-author">{{ book.author }}</p>
+                    <div class="book-meta">
+                        <div class="book-rating">
+                            {% for i in range(5) %}
+                            <i class="fas fa-star {% if i < book.rating|int %}star-filled{% endif %}"></i>
+                            {% endfor %}
+                            <span>({{ book.reviews_count }})</span>
+                        </div>
+                        <span class="book-category">{{ book.category }}</span>
+                    </div>
+                    <div class="book-footer">
+                        <span class="book-price">₹{{ book.price }}</span>
+                        <button class="btn btn-sm btn-borrow" onclick="borrowBook({{ book.id }}, event)">
+                            <i class="fas fa-plus"></i> Borrow
+                        </button>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+
+<!-- New Arrivals -->
+<section class="section">
+    <div class="container">
+        <div class="section-header">
+            <h2 class="section-title">🆕 New Arrivals</h2>
+            <a href="{{ url_for('books') }}" class="see-all">See All <i class="fas fa-arrow-right"></i></a>
+        </div>
+        <div class="books-row">
+            {% for book in new_arrivals %}
+            <div class="book-row-card">
+                <div class="brc-cover" style="background: linear-gradient(135deg, hsl({{ loop.index * 43 }}, 65%, 45%), hsl({{ loop.index * 43 + 50 }}, 55%, 35%))">
+                    <i class="fas fa-book-open"></i>
+                </div>
+                <div class="brc-info">
+                    <h4>{{ book.title }}</h4>
+                    <p>{{ book.author }}</p>
+                    <span class="badge-cat">{{ book.category }}</span>
+                </div>
+                <a href="/book/{{ book.id }}" class="brc-btn"><i class="fas fa-arrow-right"></i></a>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+
+<!-- Promo Banner -->
+<section class="promo-banner">
+    <div class="container">
+        <div class="promo-content">
+            <div class="promo-text">
+                <h2>Borrow Books for Free!</h2>
+                <p>Members can borrow up to 5 books at a time with a 14-day lending period. Late returns incur a fine of ₹5/day.</p>
+                <a href="{{ url_for('books') }}" class="btn btn-white">Start Borrowing</a>
+            </div>
+            <div class="promo-icons">
+                <i class="fas fa-book-open"></i>
+                <i class="fas fa-bookmark"></i>
+                <i class="fas fa-heart"></i>
+            </div>
+        </div>
+    </div>
+</section>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Animate stat counters
+document.querySelectorAll('.stat-num').forEach(el => {
+    const target = parseInt(el.dataset.target);
+    let count = 0;
+    const step = Math.ceil(target / 50);
+    const timer = setInterval(() => {
+        count = Math.min(count + step, target);
+        el.textContent = count.toLocaleString();
+        if (count >= target) clearInterval(timer);
+    }, 30);
+});
+</script>
+{% endblock %}

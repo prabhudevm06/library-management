@@ -1,0 +1,150 @@
+{% extends "base.html" %}
+{% block title %}My Books – LibraVerse{% endblock %}
+{% block content %}
+
+<div class="page-header">
+    <div class="container">
+        <h1>📖 My Books</h1>
+        <p>Track your borrowed books and reading history</p>
+    </div>
+</div>
+
+<div class="container my-books-page">
+    {% set active = borrows|selectattr('status','equalto','borrowed')|list %}
+    {% set returned = borrows|selectattr('status','equalto','returned')|list %}
+
+    <!-- Tab Nav -->
+    <div class="tabs">
+        <button class="tab-btn active" data-tab="active">Currently Borrowed ({{ active|length }})</button>
+        <button class="tab-btn" data-tab="history">Reading History ({{ returned|length }})</button>
+    </div>
+
+    <!-- Active Borrows -->
+    <div class="tab-content active" id="tab-active">
+        {% if active %}
+        <div class="borrow-list">
+            {% for b in active %}
+            <div class="borrow-card">
+                <div class="borrow-cover" style="background: linear-gradient(135deg, hsl({{ loop.index * 50 }}, 65%, 40%), hsl({{ loop.index * 50 + 40 }}, 55%, 30%))">
+                    <i class="fas fa-book-open"></i>
+                </div>
+                <div class="borrow-info">
+                    <h3>{{ b.title }}</h3>
+                    <p>{{ b.author }}</p>
+                    <span class="badge-cat">{{ b.category }}</span>
+                </div>
+                <div class="borrow-dates">
+                    <div class="date-item">
+                        <span class="date-label">Borrowed</span>
+                        <span class="date-val">{{ b.borrow_date }}</span>
+                    </div>
+                    <div class="date-item">
+                        <span class="date-label">Due Date</span>
+                        <span class="date-val due-date" data-due="{{ b.due_date }}">{{ b.due_date }}</span>
+                    </div>
+                </div>
+                <div class="borrow-actions">
+                    <div class="days-left" data-due="{{ b.due_date }}">
+                        <span class="days-num">--</span>
+                        <span class="days-label">days left</span>
+                    </div>
+                    <button class="btn btn-sm btn-danger" onclick="returnBook({{ b.id }}, this)">
+                        <i class="fas fa-undo"></i> Return
+                    </button>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="empty-state">
+            <i class="fas fa-book-open"></i>
+            <h3>No active borrows</h3>
+            <p>You haven't borrowed any books yet.</p>
+            <a href="{{ url_for('books') }}" class="btn btn-primary">Browse Books</a>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- History -->
+    <div class="tab-content" id="tab-history">
+        {% if returned %}
+        <div class="borrow-list">
+            {% for b in returned %}
+            <div class="borrow-card returned">
+                <div class="borrow-cover" style="background: linear-gradient(135deg, hsl({{ loop.index * 45 }}, 50%, 45%), hsl({{ loop.index * 45 + 40 }}, 40%, 35%))">
+                    <i class="fas fa-book-open"></i>
+                </div>
+                <div class="borrow-info">
+                    <h3>{{ b.title }}</h3>
+                    <p>{{ b.author }}</p>
+                    <span class="badge-cat">{{ b.category }}</span>
+                </div>
+                <div class="borrow-dates">
+                    <div class="date-item">
+                        <span class="date-label">Borrowed</span>
+                        <span class="date-val">{{ b.borrow_date }}</span>
+                    </div>
+                    <div class="date-item">
+                        <span class="date-label">Returned</span>
+                        <span class="date-val">{{ b.return_date }}</span>
+                    </div>
+                </div>
+                <div class="borrow-actions">
+                    {% if b.fine > 0 %}
+                    <div class="fine-badge">Fine: ₹{{ b.fine }}</div>
+                    {% else %}
+                    <div class="returned-badge"><i class="fas fa-check"></i> Returned</div>
+                    {% endif %}
+                    <a href="/book/{{ b.book_id }}" class="btn btn-sm btn-outline">View Book</a>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="empty-state">
+            <i class="fas fa-history"></i>
+            <h3>No reading history</h3>
+            <p>Books you've returned will appear here.</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Tab switching
+document.querySelectorAll('.tab-btn').forEach(btn => {
+    btn.addEventListener('click', function() {
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+        this.classList.add('active');
+        document.getElementById('tab-' + this.dataset.tab).classList.add('active');
+    });
+});
+
+// Days left calculation
+document.querySelectorAll('.days-left').forEach(el => {
+    const due = new Date(el.dataset.due);
+    const today = new Date();
+    const diff = Math.ceil((due - today) / (1000 * 60 * 60 * 24));
+    const numEl = el.querySelector('.days-num');
+    numEl.textContent = diff > 0 ? diff : 0;
+    if (diff <= 0) { el.style.color = '#e63946'; numEl.textContent = 'Overdue'; }
+    else if (diff <= 3) { el.style.color = '#f77f00'; }
+    else { el.style.color = '#2dc653'; }
+});
+
+async function returnBook(borrowId, btn) {
+    btn.disabled = true; btn.textContent = 'Returning...';
+    const res = await fetch(`/api/return/${borrowId}`, {method: 'POST'});
+    const data = await res.json();
+    if (data.success) {
+        if (data.fine > 0) showToast(`Returned! Fine: ₹${data.fine}`, 'warning');
+        else showToast('Book returned successfully!', 'success');
+        setTimeout(() => location.reload(), 1200);
+    }
+}
+</script>
+{% endblock %}
